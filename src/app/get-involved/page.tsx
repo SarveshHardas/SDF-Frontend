@@ -24,9 +24,15 @@ export default function GetInvolvedPage() {
     setStatus({ type: null, message: "" });
 
     try {
-      const endpoint = activeTab === "volunteer" ? "http://localhost:5000/api/volunteer" : "http://localhost:5000/api/internship";
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+      const endpoint = activeTab === "volunteer" ? `${backendUrl}/api/volunteer` : `${backendUrl}/api/internship`;
 
-      await axios.post(endpoint, formData);
+      const { firstName, lastName, address, city, phone, email, dob, aadhaar, education, bloodGroup, hobbies } = formData;
+      const payload = activeTab === "volunteer"
+        ? { firstName, lastName, address, city, phone, email, dob, aadhaar, education, occupation: formData.occupation, bloodGroup, hobbies }
+        : { firstName, lastName, address, city, phone, email, dob, aadhaar, education, college: formData.college, startDate: formData.startDate, bloodGroup, hobbies };
+
+      await axios.post(endpoint, payload);
 
       setStatus({ type: "success", message: `Your ${activeTab} application has been submitted successfully!` });
       setFormData({
@@ -107,7 +113,7 @@ export default function GetInvolvedPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-navy mb-2">Phone Number *</label>
-                <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full p-3 bg-gray rounded-lg border border-gray-300 focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal" placeholder="+91 9876543210" />
+                <input required type="tel" name="phone" value={formData.phone} onChange={handleChange} className="w-full p-3 bg-gray rounded-lg border border-gray-300 focus:outline-none focus:border-teal focus:ring-1 focus:ring-teal" placeholder="9876543210" />
               </div>
             </div>
 
