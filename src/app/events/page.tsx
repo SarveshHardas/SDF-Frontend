@@ -8,25 +8,31 @@ interface EventItem {
   title: string;
   date: string;
   description: string;
-  img: string;
+  imageUrl: string;
 }
 
 export default function EventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+        const res = await fetch(`${backendUrl}/api/events`);
+        if (!res.ok) throw new Error("Failed to fetch events");
+        const data = await res.json();
+        setEvents(data);
+      } catch (err) {
+        console.error("Error fetching events:", err);
+        setError("Unable to load events. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    const mockEvents: EventItem[] = [
-      { _id: "1", title: "Sports Day Celebration", date: "19th March 2026", img: "event1.jpg", description: "Saving Dreamz Foundation in association with Hislop College - Department" },
-      { _id: "2", title: "Support Our Students for Scholarship Exam 2026", date: "2nd March 2026", img: "event2.jpg", description: "Query Solved With immense happiness, we are proud to share" },
-      { _id: "3", title: "Polar Bear Day Celebration - DIY Bookmark Craft Activity", date: "28th February 2026", img: "event3.jpg", description: "On the occasion of International Polar Bear Day, Saving Dreamz" },
-    ];
-
-    setTimeout(() => {
-      setEvents(mockEvents);
-      setLoading(false);
-    }, 800);
+    fetchEvents();
   }, []);
 
   return (
@@ -41,13 +47,17 @@ export default function EventsPage() {
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal"></div>
           </div>
+        ) : error ? (
+          <div className="text-center text-red-500 text-lg py-16">{error}</div>
+        ) : events.length === 0 ? (
+          <div className="text-center text-gray-500 text-lg py-16">No events found. Check back soon!</div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {events.map((event) => (
               <div key={event._id} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col h-full">
                 <div className="h-56 relative overflow-hidden">
                   <img
-                    src={event.img}
+                    src={event.imageUrl}
                     alt={event.title}
                     className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-500"
                   />

@@ -1,105 +1,56 @@
-import { Mail } from "lucide-react";
-import { FaLinkedin, FaTwitter } from "react-icons/fa";
+"use client";
+
+import { useState, useEffect } from "react";
+import { FaLinkedin } from "react-icons/fa";
+
+interface TeamMember {
+  _id: string;
+  name: string;
+  role: string;
+  imageUrl: string;
+  url: string;
+}
 
 export default function TeamPage() {
-  const team = [
-    {
-      name: "Mr. Ashish Deshpande",
-      role: "President",
-      img: "/tm/tm1.png",
-      url:"https://www.linkedin.com/in/ashish-deshpande-10530a51/"
-    },
-    {
-      name: "Mr. Rohit Tokhi",
-      role: "Vice-President",
-      img: "/tm/tm2.png",
-      url:"#"
-    },
-    {
-      name: "Mr. Swapnel Chawre",
-      role: "Secretary",
-      img: "/tm/tm3.png",
-      url:"#"
-    },
-    {
-      name: "Mr. Javed Khan",
-      role: "Vice-Secretary",
-      img: "/tm/tm4.png",
-      url:"#"
-    },
-{
-      name: "Mrs. Monali Deshpande",
-      role: "Head - CSR Projects",
-      img: "/tm/tm5.png",
-      url:"#"
-    },
- {
-      name: "Mr. Dinesh Dhawane",
-      role: "Head - Library Management",
-      img: "/tm/tm6.png",
-      url:"#"
-    },
-    {
-      name: "Mrs. Dipali Sakharkar",
-      role: "Head - Art and Craft",
-      img: "/tm/tm7.png",
-      url:"#"
-    },
-    {
-      name: "Ms. Shraddha Deshpande",
-      role: "Head - Medical Project",
-      img: "/tm/tm8.png",
-      url:"#"
-    },
-    {
-      name: "Dr. Bhupesh Saroder",
-      role: "Administrative Head",
-      img: "/tm/tm9.png",
-      url:"https://www.linkedin.com/in/13-bhupesh-sarode/"
-    },
-    {
-      name: "Mr. Utsav Sinha",
-      role: "Faculty - Maths",
-      img: "/tm/tm10.png",
-      url:"#"
-    },
-    {
-      name: "Dr. Pranita Lanjewar",
-      role: "Head - Women's Health and Sanitation Program",
-      img: "/tm/tm11.png",
-      url:"#"
-    },
-    {
-      name: "Mr. Tushar Meshram",
-      role: "Head - Human Resource",
-      img: "/tm/tm12.png",
-      url:"#"
-    },
-    {
-      name: "Mr. Bhushan Maidule",
-      role: "Treasurer",
-      img: "/tm/tm13.png",
-      url:"#"
-    },
-    {
-      name: "Ms. Ankita Rathor",
-      role: "Head - Government Projects",
-      img: "/tm/tm14.png",
-      url:"#"
-    },
-    {
-      name: "Mr. Nikhilesh Ramteke",
-      role: "Insurance and Policies",
-      img: "/tm/tm15.png",
-      url:"#"
-    },
-    {
-      name: "Mr. Swapnesh Ramteke",
-      role: "French Language Coordinator",
-      img: "/tm/tm16.png",
-      url:"#"
-    }
-  ];
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+        const res = await fetch(`${backendUrl}/api/teams`, { cache: 'no-store' });
+        if (!res.ok) throw new Error("Failed to fetch team members");
+        const data = await res.json();
+        
+        
+        const roleOrder: { [key: string]: number } = {
+          "President": 1,
+          "Vice-President": 2,
+          "Vice President": 2,
+          "Secretary": 3,
+          "Vice-Secretary": 4,
+          "Vice Secretary": 4
+        };
+
+        const sortedData = data.sort((a: TeamMember, b: TeamMember) => {
+          const priorityA = roleOrder[a.role] || 100;
+          const priorityB = roleOrder[b.role] || 100;
+          return priorityA - priorityB;
+        });
+
+        setTeam(sortedData);
+      } catch (err) {
+        console.error("Error fetching team:", err);
+        setError("Unable to load team members. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeam();
+  }, []);
 
   return (
     <div className="pt-20 bg-white min-h-screen">
@@ -112,25 +63,35 @@ export default function TeamPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {team.map((member, i) => (
-            <div key={i} className="group text-center">
-              <div className="relative w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden shadow-lg border-4 border-gray group-hover:border-teal transition-colors duration-300">
-                <img 
-                  src={member.img} 
-                  alt={member.name} 
-                  className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
-                />
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-teal"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 text-lg py-16">{error}</div>
+        ) : team.length === 0 ? (
+          <div className="text-center text-gray-500 text-lg py-16">No team members found.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {team.map((member) => (
+              <div key={member._id} className="group text-center">
+                <div className="relative w-48 h-48 mx-auto mb-6 rounded-full overflow-hidden shadow-lg border-4 border-gray group-hover:border-teal transition-colors duration-300">
+                  <img 
+                    src={member.imageUrl} 
+                    alt={member.name} 
+                    className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
+                  />
+                </div>
+                <h3 className="text-2xl font-bold font-heading text-navy mb-1">{member.name}</h3>
+                <p className="text-orange font-semibold mb-3">{member.role}</p>
+                
+                <div className="flex justify-center space-x-3 text-gray-400">
+                  <a href={member.url} target="_blank" className="hover:text-teal transition-colors"><FaLinkedin size={20} /></a>
+                </div>
               </div>
-              <h3 className="text-2xl font-bold font-heading text-navy mb-1">{member.name}</h3>
-              <p className="text-orange font-semibold mb-3">{member.role}</p>
-              
-              <div className="flex justify-center space-x-3 text-gray-400">
-                <a href={member.url} target="_blank" className="hover:text-teal transition-colors"><FaLinkedin size={20} /></a>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
