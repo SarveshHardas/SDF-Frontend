@@ -6,6 +6,14 @@ import { motion } from "framer-motion";
 import { BookOpen, Heart, Activity, Recycle, Leaf, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 
+interface EventItem {
+  _id: string;
+  title: string;
+  date: string;
+  description: string;
+  imageUrl: string;
+}
+
 const Counter = ({ end, suffix = "", text }: { end: number, suffix?: string, text: string }) => {
   const [count, setCount] = useState(0);
 
@@ -38,9 +46,33 @@ const Counter = ({ end, suffix = "", text }: { end: number, suffix?: string, tex
 };
 
 export default function Home() {
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL;
+        const res = await fetch(`${backendUrl}/api/events`, { cache: 'no-store' });
+        if (!res.ok) throw new Error("Failed to fetch events");
+        const data = await res.json();
+        const sortedEvents = data.sort((a: EventItem, b: EventItem) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setEvents(sortedEvents.slice(0, 3));
+      } catch (err) {
+        console.error("Error fetching events:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchEvents();
+  }, []);
+
   return (
     <div className="w-full">
-            <section className="relative h-screen min-h-[600px] flex items-center justify-center pt-20">
+      {}
+      <section className="relative h-screen min-h-[600px] flex items-center justify-center pt-20">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-navy/60 z-10" />
           <img
@@ -86,7 +118,8 @@ export default function Home() {
         </div>
       </section>
 
-            <section className="py-20 bg-white">
+      {}
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <Counter end={5000} suffix="+" text="Children Supported" />
@@ -97,7 +130,8 @@ export default function Home() {
         </div>
       </section>
 
-            <section className="py-20 bg-gray">
+      {}
+      <section className="py-20 bg-gray">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold font-heading text-navy mb-4">Our Focus Areas</h2>
@@ -132,7 +166,7 @@ export default function Home() {
         </div>
       </section>
 
-            <section className="py-20 bg-white">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-end mb-12">
             <div>
@@ -144,36 +178,44 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { title: "Sports Day Celebration", date: "19th March 2026", img: "event1.jpg", description: "Saving Dreamz Foundation in association with Hislop College - Department" },
-              { title: "Support Our Students for Scholarship Exam 2026", date: "2nd March 2026", img: "event2.jpg", description: "Query Solved With immense happiness, we are proud to share" },
-              { title: "Polar Bear Day Celebration - DIY Bookmark Craft Activity", date: "28th February 2026", img: "event3.jpg", description: "On the occasion of International Polar Bear Day, Saving Dreamz" },
-            ].map((event, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className="rounded-2xl overflow-hidden shadow-lg group bg-white border border-gray-100"
-              >
-                <div className="relative h-60 overflow-hidden">
-                  <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300 z-10" />
-                  <img src={event.img} alt={event.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-navy font-bold px-4 py-2 rounded-lg z-20">
-                    {event.date}
-                  </div>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {events.length > 0 ? (
+                events.map((event, i) => (
+                  <motion.div
+                    key={event._id || i}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    className="rounded-2xl overflow-hidden shadow-lg group bg-white border border-gray-100 h-full flex flex-col"
+                  >
+                    <div className="relative h-60 overflow-hidden">
+                      <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors duration-300 z-10" />
+                      <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
+                      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm text-navy font-bold px-4 py-2 rounded-lg z-20">
+                        {new Date(event.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </div>
+                    </div>
+                    <div className="p-6 flex flex-col flex-grow">
+                      <h3 className="text-xl font-bold font-heading text-navy mb-3 line-clamp-1">{event.title}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-2 flex-grow">{event.description}</p>
+                      <Link href={`/events`} className="inline-block text-orange font-semibold hover:text-navy transition-colors">
+                        Learn More →
+                      </Link>
+                    </div>
+                  </motion.div>
+                ))
+              ) : (
+                <div className="col-span-full text-center text-gray-500 py-12">
+                  No recent events found.
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold font-heading text-navy mb-3 line-clamp-1">{event.title}</h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{event.description}</p>
-                  <Link href={`/events/${i}`} className="inline-block text-orange font-semibold hover:text-navy transition-colors">
-                    Learn More →
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
 
           <div className="mt-8 text-center md:hidden">
             <Link href="/events" className="inline-flex items-center text-teal font-semibold hover:text-navy transition-colors">
@@ -194,7 +236,7 @@ export default function Home() {
             Be the Change You Wish to See
           </h2>
           <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10">
-            Every contribution, whether it's your time or resources, makes a lasting impact on someone's life. Join hands with us today.
+            Every contribution, whether it&apos;s your time or resources, makes a lasting impact on someone&apos;s life. Join hands with us today.
           </p>
           <div className="flex justify-center gap-4">
             <Link href="/get-involved" className="bg-teal hover:bg-white hover:text-teal text-white font-semibold py-4 px-10 rounded-full transition-all duration-300 transform hover:-translate-y-1 shadow-lg text-lg">
